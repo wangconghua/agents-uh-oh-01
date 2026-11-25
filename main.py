@@ -55,6 +55,41 @@ BANNED_WORDS = (
 )
 
 
+def validate_word_shape(value):
+    """Check the word's shape: a plain spoken word, not a code or a
+    mangled token.
+
+    Rules:
+    - all lowercase letters only (no digits, punctuation or capitals),
+    - at least 2 characters, so a single letter never passes,
+    - contains at least one vowel, so it reads as a pronounceable word
+      rather than a consonant cluster or a code,
+    - no letter repeats 3+ times in a row ("bufffering" would not be
+      a real word, and a stuttered "aaa" is not an agent reaction).
+    """
+    if not value.isalpha() or not value.islower():
+        raise ValueError(
+            "entry must be all lowercase letters, got %r" % value
+        )
+    if len(value) < 2:
+        raise ValueError(
+            "entry must be at least 2 characters, got %d" % len(value)
+        )
+    if not any(ch in "aeiou" for ch in value):
+        raise ValueError(
+            "entry must contain at least one vowel, got %r" % value
+        )
+    run = 1
+    for prev, cur in zip(value, value[1:]):
+        run = run + 1 if cur == prev else 1
+        if run >= 3:
+            raise ValueError(
+                "entry must not repeat a letter 3+ times in a row: %r"
+                % value
+            )
+    return value
+
+
 def validate(value):
     """Enforce the kit's gate and the brief's one-word rule.
 
@@ -75,6 +110,7 @@ def validate(value):
         raise ValueError("entry must be exactly one word, no whitespace")
     if value.lower() in BANNED_WORDS:
         raise ValueError("entry is a banned stock word: %r" % value)
+    validate_word_shape(value)
     return value
 
 
